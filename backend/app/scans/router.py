@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -7,6 +7,7 @@ from app.models.base import get_db
 from app.models.event import ScanEvent
 from app.models.finding import Finding
 from app.models.scan import Scan, ScanStatus
+from app.recon.orchestrator import run_recon
 from app.scans import service
 from app.scans.schemas import (
     AssetResponse,
@@ -50,12 +51,14 @@ def get_scan(scan_id: str, db: Session = Depends(get_db)):
 
 
 @router.post("/{scan_id}/start", response_model=ScanResponse)
-def start_scan(scan_id: str, db: Session = Depends(get_db)):
+def start_scan(scan_id: str, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     scan = _get_scan_or_404(db, scan_id)
     try:
-        return service.transition(db, scan, ScanStatus.RUNNING)
+        updated = service.transition(db, scan, ScanStatus.RUNNING)
     except service.InvalidTransition as e:
         raise HTTPException(status_code=409, detail=str(e))
+    background_tasks.add_task(run_recon, scan_id)
+    return updated
 
 
 @router.post("/{scan_id}/pause", response_model=ScanResponse)

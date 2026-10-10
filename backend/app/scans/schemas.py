@@ -1,9 +1,10 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.models.scan import ScanProfile, ScanStatus
+from app.scope.validator import ScopeViolation, validate_target_format
 
 
 class ScanCreateRequest(BaseModel):
@@ -11,8 +12,22 @@ class ScanCreateRequest(BaseModel):
     profile: ScanProfile = ScanProfile.STANDARD
     scope_config: dict = Field(
         default_factory=dict,
-        description="Authorized scope: allowlists, exclusions, etc. Enforced in Phase 4+.",
+        description="Authorized scope: allowlists, exclusions. Defaults to the target itself.",
     )
+
+    @field_validator("target")
+    @classmethod
+    def validate_target(cls, v: str) -> str:
+        try:
+            return validate_target_format(v)
+        except ScopeViolation as e:
+            raise ValueError(str(e))
+
+    @model_validator(mode="after")
+    def default_scope_to_target(self):
+        if not self.scope_config.get("allowed"):
+            self.scope_config["allowed"] = [self.target]
+        return self
 
 
 class ScanResponse(BaseModel):
