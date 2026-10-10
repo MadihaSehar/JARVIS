@@ -65,3 +65,6 @@ class Scan(Base):
     events: Mapped[list["ScanEvent"]] = relationship(
         back_populates="scan", cascade="all, delete-orphan"
     )
+    action_proposals: Mapped[list["ActionProposal"]] = relationship(
+        back_populates="scan", cascade="all, delete-orphan"
+    )

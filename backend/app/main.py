@@ -2,12 +2,14 @@ from fastapi import FastAPI
 
 from app.ai.router import router as ai_router
 from app.core.config import settings
+from app.orchestration.router import router as orchestration_router
 from app.scans.router import router as scans_router
 
 app = FastAPI(title=settings.app_name)
 
 app.include_router(ai_router)
 app.include_router(scans_router)
+app.include_router(orchestration_router)
 
 
 @app.get("/api/health")

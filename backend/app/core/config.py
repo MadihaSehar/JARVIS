@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     ollama_default_model: str = "llama3.2:3b"
     ollama_timeout_seconds: int = 120
 
+    orchestration_budget: int = 20
+
     enable_cloud_ai: bool = False
     openai_api_key: str | None = None
     anthropic_api_key: str | None = None
