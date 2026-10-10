@@ -1,7 +1,11 @@
 from fastapi import FastAPI
+
+from app.ai.router import router as ai_router
 from app.core.config import settings
 
 app = FastAPI(title=settings.app_name)
+
+app.include_router(ai_router)
 
 
 @app.get("/api/health")
