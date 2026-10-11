@@ -28,5 +28,10 @@ class Settings(BaseSettings):
 
     enabled_scanners: str = "security_headers,reflected_input"
 
+    # Shared-secret auth. If unset, the API runs unauthenticated (dev
+    # convenience) and logs a loud warning at startup -- set this for
+    # anything reachable beyond localhost.
+    api_key: str | None = None
+
 
 settings = Settings()

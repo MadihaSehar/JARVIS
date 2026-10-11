@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { api, ScanEvent, wsBase } from "@/lib/api";
+import { api, ScanEvent, wsUrl } from "@/lib/api";
 
 export default function LiveEventFeed({ scanId }: { scanId: string }) {
   const [events, setEvents] = useState<ScanEvent[]>([]);
@@ -32,7 +32,7 @@ export default function LiveEventFeed({ scanId }: { scanId: string }) {
       .then(addEvents)
       .catch(() => {});
 
-    const ws = new WebSocket(`${wsBase()}/ws/scans/${scanId}`);
+    const ws = new WebSocket(wsUrl(`/ws/scans/${scanId}`));
     ws.onopen = () => setConnected(true);
     ws.onclose = () => setConnected(false);
     ws.onerror = () => setConnected(false);

@@ -1,5 +1,42 @@
+const API_KEY_STORAGE_KEY = "jarvis.apiKey";
+
+export function getApiKey(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(API_KEY_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setApiKey(key: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(API_KEY_STORAGE_KEY, key);
+  } catch {
+    // ignore -- per-viewer convenience only
+  }
+}
+
+export function clearApiKey(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(API_KEY_STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 export function reportUrl(scanId: string, format: "json" | "markdown" | "html"): string {
-  return `${apiBase()}/api/scans/${scanId}/report?format=${format}`;
+  const key = getApiKey();
+  const keyParam = key ? `&api_key=${encodeURIComponent(key)}` : "";
+  return `${apiBase()}/api/scans/${scanId}/report?format=${format}${keyParam}`;
+}
+
+export function wsUrl(path: string): string {
+  const key = getApiKey();
+  const keyParam = key ? `?api_key=${encodeURIComponent(key)}` : "";
+  return `${wsBase()}${path}${keyParam}`;
 }
 
 export function apiBase(): string {
@@ -17,10 +54,20 @@ export function wsBase(): string {
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const key = getApiKey();
   const res = await fetch(`${apiBase()}${path}`, {
     ...options,
-    headers: { "Content-Type": "application/json", ...(options?.headers || {}) },
+    headers: {
+      "Content-Type": "application/json",
+      ...(key ? { "X-API-Key": key } : {}),
+      ...(options?.headers || {}),
+    },
   });
+  if (res.status === 401) {
+    clearApiKey();
+    if (typeof window !== "undefined") window.location.reload();
+    throw new Error("401 Unauthorized: API key rejected");
+  }
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(`${res.status} ${res.statusText}: ${text}`);
@@ -128,7 +175,7 @@ export interface AppSettings {
 }
 
 export const api = {
-  health: () => request<{ status: string; app: string; environment: string }>("/api/health"),
+  health: () => request<{ status: string; app: string; environment: string; auth_enabled: boolean }>("/api/health"),
 
   aiStatus: () => request<AiStatus>("/api/ai/status"),
   aiProviders: () => request<AiStatus[]>("/api/ai/providers"),

@@ -3,6 +3,7 @@ import asyncio
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from sqlalchemy import select
 
+from app.core.security import check_ws_api_key
 from app.models.base import SessionLocal
 from app.models.event import ScanEvent
 
@@ -13,9 +14,19 @@ POLL_INTERVAL_SECONDS = 1.0
 
 @router.websocket("/ws/scans/{scan_id}")
 async def scan_events_ws(websocket: WebSocket, scan_id: str):
-    """Streams new scan events as they're persisted. A reconnecting client
-    should first GET /api/scans/{id}/events for history, then open this for
-    live updates -- this socket only sends events from the moment it connects."""
+    """Streams scan events. A reconnecting client should first GET
+    /api/scans/{id}/events for history, then open this for live updates --
+    in practice this socket also backfills full history on connect, since
+    it has no prior cursor the first time through the loop.
+
+    If API_KEY is configured, the client must pass it as ?api_key=... --
+    browsers can't set custom headers on a WebSocket handshake, so the
+    header-based auth used elsewhere isn't available here."""
+    provided_key = websocket.query_params.get("api_key")
+    if not check_ws_api_key(provided_key):
+        await websocket.close(code=4401)
+        return
+
     await websocket.accept()
     last_seen = None
     try:

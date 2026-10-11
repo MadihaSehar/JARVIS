@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Panel from "@/components/Panel";
 import LiveEventFeed from "@/components/LiveEventFeed";
 import AssetTable from "@/components/AssetTable";
-import { api, Asset, Scan, ScanProfile } from "@/lib/api";
+import { api, ActionProposal, Asset, Scan, ScanProfile } from "@/lib/api";
 import { useScanContext } from "@/lib/scan-context";
 
 export default function ReconnaissancePage() {
@@ -16,6 +16,7 @@ export default function ReconnaissancePage() {
   const [scan, setScan] = useState<Scan | null>(null);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
+  const [proposals, setProposals] = useState<ActionProposal[]>([]);
 
   useEffect(() => {
     if (!currentScanId) {
@@ -29,6 +30,8 @@ export default function ReconnaissancePage() {
         if (!cancelled) setScan(s);
         const a = await api.getScanAssets(currentScanId!);
         if (!cancelled) setAssets(a);
+        const p = await api.getProposals(currentScanId!);
+        if (!cancelled) setProposals(p);
       } catch {
         // ignore transient errors
       }
@@ -176,6 +179,48 @@ export default function ReconnaissancePage() {
               </div>
             </Panel>
           </div>
+
+          <Panel title={`AI Action Proposals (${proposals.length})`}>
+            {proposals.length === 0 ? (
+              <p className="text-foreground-muted text-[13px]">
+                No proposals yet. Click "Run AI Orchestration" above to generate some -- the AI
+                (or the deterministic fallback, if the AI is unreachable) will suggest which
+                assets deserve priority review, and every proposal shown here already passed or
+                failed the policy gate independently of what the AI claimed.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {proposals.map((p) => (
+                  <div key={p.id} className="border border-panel-border rounded p-3 text-[13px]">
+                    <div className="flex items-center justify-between font-mono">
+                      <span className="text-foreground">{p.action_type}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-foreground-muted text-[11px]">
+                          source: {p.source}
+                        </span>
+                        <span
+                          className={
+                            p.status === "approved"
+                              ? "text-success"
+                              : p.status === "rejected"
+                                ? "text-danger"
+                                : "text-warning"
+                          }
+                        >
+                          {p.status}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-foreground-muted mt-1">{p.rationale}</p>
+                    <div className="flex items-center gap-3 mt-2 text-[11px] font-mono text-foreground-muted">
+                      <span>confidence: {p.confidence}</span>
+                      {p.policy_reason && <span>policy: {p.policy_reason}</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Panel>
         </>
       )}
     </div>
