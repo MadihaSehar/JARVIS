@@ -8,7 +8,7 @@ from app.models.base import SessionLocal
 from app.models.event import ScanEvent
 from app.models.finding import Finding
 from app.models.scan import Scan, ScanStatus
-from app.scanners.registry import AVAILABLE_SCANNERS
+from app.scanners.registry import get_enabled_scanners
 from app.scope.validator import is_blocked_destination, is_in_scope
 
 MAX_FINDINGS_PER_SCAN = 100
@@ -73,7 +73,7 @@ def run_security_tests(scan_id: str) -> None:
                 _emit(db, scan_id, "scanning.blocked", {"url": url})
                 continue
 
-            for scanner_name, scanner in AVAILABLE_SCANNERS.items():
+            for scanner_name, scanner in get_enabled_scanners().items():
                 _emit(db, scan_id, "scanning.scanner.started", {"scanner": scanner_name, "url": url})
                 try:
                     candidates = scanner.run(url, timeout=SCANNER_TIMEOUT)

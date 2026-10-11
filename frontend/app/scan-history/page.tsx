@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Panel from "@/components/Panel";
-import { api, Scan } from "@/lib/api";
+import { api, reportUrl, Scan } from "@/lib/api";
 import { useScanContext } from "@/lib/scan-context";
 
 export default function ScanHistoryPage() {
@@ -32,7 +32,8 @@ export default function ScanHistoryPage() {
       <div>
         <h1 className="text-xl font-mono text-foreground">Scan History</h1>
         <p className="text-foreground-muted text-[13px] mt-1">
-          Every scan ever run. Select one to make it the active scan across the app.
+          Every scan ever run. Select one to make it the active scan across the app, or export
+          a report.
         </p>
       </div>
 
@@ -48,6 +49,7 @@ export default function ScanHistoryPage() {
                 <th className="py-1.5 pr-3">Status</th>
                 <th className="py-1.5 pr-3">Created</th>
                 <th className="py-1.5 pr-3"></th>
+                <th className="py-1.5 pr-3">Export</th>
               </tr>
             </thead>
             <tbody>
@@ -67,6 +69,19 @@ export default function ScanHistoryPage() {
                     >
                       {currentScanId === s.id ? "active" : "select"}
                     </button>
+                  </td>
+                  <td className="py-1.5 pr-3">
+                    <div className="flex gap-1">
+                      {(["json", "markdown", "html"] as const).map((fmt) => (
+                        <a
+                          key={fmt}
+                          href={reportUrl(s.id, fmt)}
+                          className="text-[11px] border border-panel-border rounded px-2 py-0.5 text-foreground-muted hover:text-accent hover:border-accent/40"
+                        >
+                          {fmt}
+                        </a>
+                      ))}
+                    </div>
                   </td>
                 </tr>
               ))}

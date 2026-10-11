@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Panel from "@/components/Panel";
 import SeverityBadge from "@/components/SeverityBadge";
-import { api, Finding } from "@/lib/api";
+import { api, reportUrl, Finding } from "@/lib/api";
 import { useScanContext } from "@/lib/scan-context";
 
 const SEVERITIES = ["critical", "high", "medium", "low", "info"] as const;
@@ -70,6 +70,20 @@ export default function FindingsPage() {
         </Panel>
       ) : (
         <>
+          <Panel title="Export Report">
+            <div className="flex gap-2">
+              {(["json", "markdown", "html"] as const).map((fmt) => (
+                <a
+                  key={fmt}
+                  href={reportUrl(currentScanId, fmt)}
+                  className="text-[11px] font-mono border border-panel-border rounded px-3 py-1 text-foreground-muted hover:text-accent hover:border-accent/40"
+                >
+                  Download {fmt.toUpperCase()}
+                </a>
+              ))}
+            </div>
+          </Panel>
+
           <Panel title="Filter by Severity">
             <div className="flex flex-wrap gap-2">
               <button

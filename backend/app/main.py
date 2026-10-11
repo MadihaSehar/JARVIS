@@ -8,6 +8,7 @@ from app.orchestration.router import router as orchestration_router
 from app.scanners.router import router as scanning_router
 from app.scans.router import router as scans_router
 from app.scans.ws import router as scans_ws_router
+from app.reports.router import router as reports_router
 
 app = FastAPI(title=settings.app_name)
 
@@ -25,6 +26,7 @@ app.include_router(orchestration_router)
 app.include_router(scanning_router)
 app.include_router(scans_ws_router)
 app.include_router(info_router)
+app.include_router(reports_router)
 
 
 @app.get("/api/health")

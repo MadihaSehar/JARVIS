@@ -1,3 +1,7 @@
+export function reportUrl(scanId: string, format: "json" | "markdown" | "html"): string {
+  return `${apiBase()}/api/scans/${scanId}/report?format=${format}`;
+}
+
 export function apiBase(): string {
   if (typeof window !== "undefined") {
     return `http://${window.location.hostname}:8001`;
@@ -104,6 +108,7 @@ export interface ScannerInfo {
   name: string;
   category: string;
   risk_level: string;
+  enabled: boolean;
 }
 
 export interface AppSettings {
@@ -114,12 +119,19 @@ export interface AppSettings {
   ollama_default_model: string;
   orchestration_budget: number;
   enable_cloud_ai: boolean;
+  cloud_ai_provider: string;
+  openai_default_model: string;
+  openai_api_key_configured: boolean;
+  anthropic_default_model: string;
+  anthropic_api_key_configured: boolean;
+  enabled_scanners: string[];
 }
 
 export const api = {
   health: () => request<{ status: string; app: string; environment: string }>("/api/health"),
 
   aiStatus: () => request<AiStatus>("/api/ai/status"),
+  aiProviders: () => request<AiStatus[]>("/api/ai/providers"),
   aiModels: () => request<AiModel[]>("/api/ai/models"),
   aiTest: (prompt?: string) =>
     request<{ success: boolean; response: string | null; error: string | null; duration_ms: number | null }>(

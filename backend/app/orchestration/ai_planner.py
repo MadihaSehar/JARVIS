@@ -2,8 +2,7 @@ import asyncio
 import json
 import re
 
-from app.ai.ollama_provider import OllamaProvider
-from app.core.config import settings
+from app.ai.factory import get_active_provider, get_default_model_for
 
 PROMPT_TEMPLATE = """You are assisting a security reconnaissance tool. Given the discovered assets below, propose which ones deserve prioritized human review, and briefly explain why, based only on the evidence given. Do not claim anything is vulnerable. Output ONLY a JSON array, no other text, in exactly this shape:
 [{{"asset_value": "<value>", "rationale": "<short reason citing the evidence>", "confidence": <number 0.0 to 1.0>}}]
@@ -30,10 +29,10 @@ def propose_with_ai(assets: list[dict], max_items: int = 10):
     asset_lines = "\n".join(f"- {a['asset_type']}: {a['value']}" for a in sample)
     prompt = PROMPT_TEMPLATE.format(asset_lines=asset_lines)
 
-    provider = OllamaProvider()
+    provider = get_active_provider()
 
     async def _run():
-        return await provider.generate(model=settings.ollama_default_model, prompt=prompt)
+        return await provider.generate(model=get_default_model_for(provider), prompt=prompt)
 
     try:
         result = asyncio.run(_run())

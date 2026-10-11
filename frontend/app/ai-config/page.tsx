@@ -6,6 +6,7 @@ import { api, AiModel, AiStatus } from "@/lib/api";
 
 export default function AiConfigPage() {
   const [status, setStatus] = useState<AiStatus | null>(null);
+  const [providers, setProviders] = useState<AiStatus[]>([]);
   const [models, setModels] = useState<AiModel[]>([]);
   const [prompt, setPrompt] = useState("Say hello in exactly five words.");
   const [testing, setTesting] = useState(false);
@@ -17,6 +18,11 @@ export default function AiConfigPage() {
     async function load() {
       try {
         setStatus(await api.aiStatus());
+      } catch {
+        // ignore
+      }
+      try {
+        setProviders(await api.aiProviders());
       } catch {
         // ignore
       }
@@ -99,6 +105,26 @@ export default function AiConfigPage() {
           ) : (
             <p className="text-foreground-muted text-[13px]">Loading...</p>
           )}
+        </Panel>
+
+        <Panel title="All Providers">
+          {providers.length === 0 ? (
+            <p className="text-foreground-muted text-[13px]">Loading...</p>
+          ) : (
+            <div className="space-y-2">
+              {providers.map((p) => (
+                <div key={p.provider} className="flex items-center justify-between text-[13px] font-mono">
+                  <span className="text-foreground">{p.provider}</span>
+                  <span className={p.reachable ? "text-success" : "text-danger"}>
+                    {p.reachable ? "reachable" : "unreachable"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="text-foreground-muted text-[11px] mt-3">
+            Cloud providers require enable_cloud_ai=true and a matching API key in .env.
+          </p>
         </Panel>
 
         <Panel title={`Available Models (${models.length})`}>

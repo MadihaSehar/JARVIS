@@ -1,15 +1,21 @@
 from fastapi import APIRouter
 
 from app.core.config import settings
-from app.scanners.registry import AVAILABLE_SCANNERS
+from app.scanners.registry import AVAILABLE_SCANNERS, get_enabled_scanner_names
 
 router = APIRouter(prefix="/api", tags=["info"])
 
 
 @router.get("/scanners")
 async def list_scanners():
+    enabled = get_enabled_scanner_names()
     return [
-        {"name": name, "category": s.category, "risk_level": s.risk_level}
+        {
+            "name": name,
+            "category": s.category,
+            "risk_level": s.risk_level,
+            "enabled": name in enabled,
+        }
         for name, s in AVAILABLE_SCANNERS.items()
     ]
 
@@ -25,4 +31,10 @@ async def get_settings():
         "ollama_default_model": settings.ollama_default_model,
         "orchestration_budget": settings.orchestration_budget,
         "enable_cloud_ai": settings.enable_cloud_ai,
+        "cloud_ai_provider": settings.cloud_ai_provider,
+        "openai_default_model": settings.openai_default_model,
+        "openai_api_key_configured": bool(settings.openai_api_key),
+        "anthropic_default_model": settings.anthropic_default_model,
+        "anthropic_api_key_configured": bool(settings.anthropic_api_key),
+        "enabled_scanners": sorted(get_enabled_scanner_names()),
     }

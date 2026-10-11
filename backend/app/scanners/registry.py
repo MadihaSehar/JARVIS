@@ -1,3 +1,4 @@
+from app.core.config import settings
 from app.scanners.reflected_input import ReflectedInputScanner
 from app.scanners.security_headers import SecurityHeadersScanner
 
@@ -8,3 +9,18 @@ AVAILABLE_SCANNERS = {
     "security_headers": SecurityHeadersScanner(),
     "reflected_input": ReflectedInputScanner(),
 }
+
+
+def get_enabled_scanner_names() -> set[str]:
+    """Which registered scanners are turned on, per ENABLED_SCANNERS in .env.
+    An empty/unset value enables all registered scanners (fail-open on
+    config, not on safety -- every scanner here is passive or safe-active)."""
+    raw = (settings.enabled_scanners or "").strip()
+    if not raw:
+        return set(AVAILABLE_SCANNERS.keys())
+    return {name.strip() for name in raw.split(",") if name.strip()}
+
+
+def get_enabled_scanners() -> dict:
+    enabled = get_enabled_scanner_names()
+    return {name: s for name, s in AVAILABLE_SCANNERS.items() if name in enabled}

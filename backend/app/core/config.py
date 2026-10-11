@@ -18,9 +18,15 @@ class Settings(BaseSettings):
     orchestration_budget: int = 20
 
     enable_cloud_ai: bool = False
+    cloud_ai_provider: str = "openai"
     openai_api_key: str | None = None
+    openai_default_model: str = "gpt-4o-mini"
     anthropic_api_key: str | None = None
+    anthropic_default_model: str = "claude-sonnet-5"
     google_api_key: str | None = None
+    cloud_ai_timeout_seconds: int = 60
+
+    enabled_scanners: str = "security_headers,reflected_input"
 
 
 settings = Settings()

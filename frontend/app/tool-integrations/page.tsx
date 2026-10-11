@@ -43,6 +43,9 @@ export default function ToolIntegrationsPage() {
                 <span className="text-foreground">{s.name}</span>
                 <span className="text-foreground-muted">{s.category}</span>
                 <span className="text-accent">{s.risk_level}</span>
+                <span className={s.enabled ? "text-success" : "text-foreground-muted"}>
+                  {s.enabled ? "enabled" : "disabled"}
+                </span>
               </div>
             ))}
           </div>
