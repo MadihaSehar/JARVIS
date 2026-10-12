@@ -7,9 +7,13 @@ from app.models.asset import Asset
 from app.models.base import SessionLocal
 from app.models.event import ScanEvent
 from app.models.scan import Scan, ScanStatus
+from app.core.config import settings
 from app.recon.dns_enum import enumerate_dns_records
 from app.recon.subdomains import discover_subdomains_passive
 from app.scope.validator import is_blocked_destination, is_in_scope
+from app.tools.amass import run_amass
+from app.tools.dnsx import run_dnsx
+from app.tools.subfinder import run_subfinder
 
 
 def _emit(db, scan_id: str, event_type: str, payload: dict | None = None) -> None:
@@ -47,11 +51,33 @@ def run_recon(scan_id: str) -> None:
         _emit(db, scan_id, "recon.subdomains.started", {"target": target})
         in_scope_subs: list[str] = []
         try:
-            discovered = discover_subdomains_passive(target)
+            sources: dict[str, set[str]] = {}
+
+            for host in discover_subdomains_passive(target):
+                sources.setdefault(host, set()).add("crt.sh")
+
+            if settings.external_tools_enabled:
+                for host in run_subfinder(target, timeout=settings.external_tool_timeout_seconds):
+                    sources.setdefault(host, set()).add("subfinder")
+                for host in run_amass(target, timeout=settings.external_tool_timeout_seconds):
+                    sources.setdefault(host, set()).add("amass")
+
+            discovered = sorted(sources.keys())
             in_scope_subs = [s for s in discovered if is_in_scope(s, scope_config)]
             excluded_count = len(discovered) - len(in_scope_subs)
+
+            # dnsx runs here as a fast bulk resolution check purely for
+            # visibility (the recon.dnsx.completed event). It never
+            # drops or filters subdomains itself -- every subdomain
+            # still goes through the same per-host resolution and
+            # is_blocked_destination check below as everything else
+            # does, so a dnsx hiccup can never silently lose an asset.
+            if settings.external_tools_enabled and in_scope_subs:
+                dnsx_resolved = run_dnsx(in_scope_subs, timeout=settings.external_tool_timeout_seconds)
+                _emit(db, scan_id, "recon.dnsx.completed", {"resolved": len(dnsx_resolved), "checked": len(in_scope_subs)})
+
             for sub in in_scope_subs:
-                _add_asset(db, scan_id, "subdomain", sub, {"source": "crt.sh"})
+                _add_asset(db, scan_id, "subdomain", sub, {"source": sorted(sources[sub])})
             _emit(
                 db, scan_id, "recon.subdomains.completed",
                 {"found": len(discovered), "in_scope": len(in_scope_subs), "excluded": excluded_count},

@@ -33,5 +33,16 @@ class Settings(BaseSettings):
     # anything reachable beyond localhost.
     api_key: str | None = None
 
+    # External recon/scanning tool adapters (subfinder, amass, dnsx,
+    # katana, ffuf, nuclei). Binaries are looked up on PATH first, then
+    # in external_tools_bin_dir as a fallback (covers `go install`,
+    # which puts binaries in ~/go/bin, a directory that is not always
+    # on a service account's PATH).
+    external_tools_bin_dir: str = "/home/bilawal/go/bin"
+    external_tools_enabled: bool = True
+    external_tool_timeout_seconds: int = 120
+    nuclei_templates_severity: str = "medium,high,critical"
+    ffuf_wordlist_path: str = ""
+
 
 settings = Settings()
