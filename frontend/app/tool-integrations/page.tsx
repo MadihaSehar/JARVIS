@@ -10,6 +10,9 @@ const IMPLEMENTED = [
   { name: "httpx (Python)", purpose: "HTTP service probing and header retrieval" },
   { name: "security_headers scanner", purpose: "Checks for missing security headers and cookie flags" },
   { name: "reflected_input scanner", purpose: "Canary-based reflected input detection" },
+  { name: "open_redirect scanner", purpose: "Canary-based detection of unvalidated redirect parameters" },
+  { name: "info_disclosure scanner", purpose: "Probes for exposed .git, .env, and backup files" },
+  { name: "cors_misconfig scanner", purpose: "Detects reflected-origin and wildcard+credentials CORS policies" },
 ];
 
 const NOT_YET_INTEGRATED = [
