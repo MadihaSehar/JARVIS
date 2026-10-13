@@ -81,6 +81,17 @@ export default function ReconnaissancePage() {
     }
   }
 
+  async function handleDiscovery() {
+    if (!currentScanId) return;
+    setActionMsg("Starting endpoint/directory discovery (katana + ffuf)...");
+    try {
+      await api.triggerDiscovery(currentScanId);
+      setActionMsg("Discovery started -- this can take a minute or two; check Endpoint/Directory Discovery for results.");
+    } catch (err) {
+      setActionMsg(err instanceof Error ? err.message : String(err));
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -142,6 +153,12 @@ export default function ReconnaissancePage() {
                   className="text-[11px] font-mono border border-panel-border rounded px-2 py-1 text-foreground-muted hover:text-accent hover:border-accent/40"
                 >
                   Run Security Scan
+                </button>
+                <button
+                  onClick={handleDiscovery}
+                  className="text-[11px] font-mono border border-panel-border rounded px-2 py-1 text-foreground-muted hover:text-accent hover:border-accent/40"
+                >
+                  Run Discovery
                 </button>
               </div>
             }

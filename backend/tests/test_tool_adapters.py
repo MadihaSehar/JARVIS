@@ -112,3 +112,46 @@ def test_run_dnsx_empty_input_short_circuits():
 def test_run_dnsx_empty_on_missing_tool():
     with patch("app.tools.dnsx.run_tool", return_value=None):
         assert run_dnsx(["a.com"]) == {}
+
+
+def test_run_katana_parses_url_lines():
+    sample = "http://demo.testfire.net\nhttp://demo.testfire.net/login.jsp\nnot-a-url-line\n"
+    with patch("app.tools.katana.run_tool", return_value=_completed(stdout=sample)):
+        from app.tools.katana import run_katana
+        endpoints = run_katana("http://demo.testfire.net")
+    assert endpoints == ["http://demo.testfire.net", "http://demo.testfire.net/login.jsp"]
+
+
+def test_run_katana_empty_on_missing_tool():
+    from app.tools.katana import run_katana
+    with patch("app.tools.katana.run_tool", return_value=None):
+        assert run_katana("http://demo.testfire.net") == []
+
+
+def test_run_ffuf_parses_jsonl_hits():
+    sample = (
+        '{"url":"http://demo.testfire.net/admin","status":302,"length":0,"redirectlocation":"/login.jsp"}\n'
+        '{"url":"http://demo.testfire.net/swagger","status":302,"length":0,"redirectlocation":"/swagger/"}\n'
+    )
+    with patch("app.tools.ffuf.run_tool", return_value=_completed(stdout=sample)):
+        from app.tools.ffuf import run_ffuf
+        hits = run_ffuf("http://demo.testfire.net", "/fake/wordlist.txt")
+    assert len(hits) == 2
+    assert hits[0] == {
+        "url": "http://demo.testfire.net/admin", "status": 302, "length": 0, "redirect_to": "/login.jsp",
+    }
+
+
+def test_run_ffuf_empty_on_missing_tool():
+    from app.tools.ffuf import run_ffuf
+    with patch("app.tools.ffuf.run_tool", return_value=None):
+        assert run_ffuf("http://demo.testfire.net", "/fake/wordlist.txt") == []
+
+
+def test_run_ffuf_skips_malformed_lines():
+    sample = 'not json\n{"url":"http://demo.testfire.net/admin","status":200,"length":10}\n'
+    with patch("app.tools.ffuf.run_tool", return_value=_completed(stdout=sample)):
+        from app.tools.ffuf import run_ffuf
+        hits = run_ffuf("http://demo.testfire.net", "/fake/wordlist.txt")
+    assert len(hits) == 1
+    assert hits[0]["url"] == "http://demo.testfire.net/admin"

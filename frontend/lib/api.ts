@@ -210,6 +210,9 @@ export const api = {
   triggerSecurityScan: (id: string) =>
     request<{ status: string; scan_id: string }>(`/api/scans/${id}/scan`, { method: "POST" }),
 
+  triggerDiscovery: (id: string) =>
+    request<{ status: string; scan_id: string }>(`/api/scans/${id}/discover`, { method: "POST" }),
+
   listScanners: () => request<ScannerInfo[]>("/api/scanners"),
   getSettings: () => request<AppSettings>("/api/settings"),
 };
