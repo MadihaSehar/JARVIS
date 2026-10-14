@@ -1,5 +1,6 @@
 from app.ai.anthropic_provider import AnthropicProvider
 from app.ai.base import AIProvider
+from app.ai.groq_provider import GroqProvider
 from app.ai.ollama_provider import OllamaProvider
 from app.ai.openai_provider import OpenAIProvider
 from app.core.config import settings
@@ -7,6 +8,7 @@ from app.core.config import settings
 CLOUD_PROVIDERS: dict[str, type[AIProvider]] = {
     "openai": OpenAIProvider,
     "anthropic": AnthropicProvider,
+    "groq": GroqProvider,
 }
 
 
@@ -30,9 +32,11 @@ def get_default_model_for(provider: AIProvider) -> str:
         return settings.openai_default_model
     if provider.name == "anthropic":
         return settings.anthropic_default_model
+    if provider.name == "groq":
+        return settings.groq_default_model
     return settings.ollama_default_model
 
 
 def get_all_providers() -> list[AIProvider]:
     """Every provider this build knows how to talk to, for a status overview."""
-    return [OllamaProvider(), OpenAIProvider(), AnthropicProvider()]
+    return [OllamaProvider(), OpenAIProvider(), AnthropicProvider(), GroqProvider()]
