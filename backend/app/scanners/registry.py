@@ -1,6 +1,7 @@
 from app.core.config import settings
 from app.scanners.cors_misconfig import CorsMisconfigScanner
 from app.scanners.info_disclosure import InfoDisclosureScanner
+from app.scanners.nuclei_scanner import NucleiScanner
 from app.scanners.open_redirect import OpenRedirectScanner
 from app.scanners.reflected_input import ReflectedInputScanner
 from app.scanners.security_headers import SecurityHeadersScanner
@@ -14,6 +15,7 @@ AVAILABLE_SCANNERS = {
     "open_redirect": OpenRedirectScanner(),
     "info_disclosure": InfoDisclosureScanner(),
     "cors_misconfig": CorsMisconfigScanner(),
+    "nuclei": NucleiScanner(),
 }
 
 
