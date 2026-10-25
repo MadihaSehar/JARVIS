@@ -1,8 +1,8 @@
 const COLORS: Record<string, string> = {
-  critical: "bg-danger/20 text-danger border-danger/40",
-  high: "bg-danger/15 text-danger border-danger/30",
-  medium: "bg-warning/15 text-warning border-warning/30",
-  low: "bg-info/15 text-info border-info/30",
+  critical: "bg-sev-critical/20 text-sev-critical border-sev-critical/40",
+  high: "bg-sev-high/15 text-sev-high border-sev-high/30",
+  medium: "bg-sev-medium/15 text-sev-medium border-sev-medium/30",
+  low: "bg-sev-low/15 text-sev-low border-sev-low/30",
   info: "bg-panel-border text-foreground-muted border-panel-border",
 };
 

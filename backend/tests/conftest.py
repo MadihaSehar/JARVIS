@@ -33,3 +33,10 @@ def db_session():
         yield session
     finally:
         session.close()
+
+
+@pytest.fixture(autouse=True)
+def _no_real_dns(monkeypatch):
+    """Scope checks resolve hostnames; keep tests off the network by
+    default. Tests that care about resolution patch resolve_ips themselves."""
+    monkeypatch.setattr("app.scope.validator.resolve_ips", lambda host: [])

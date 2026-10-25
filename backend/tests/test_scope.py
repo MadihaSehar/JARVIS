@@ -4,6 +4,7 @@ from app.scope.validator import (
     ScopeViolation,
     is_blocked_destination,
     is_in_scope,
+    resolves_to_blocked,
     validate_target_format,
 )
 
@@ -83,3 +84,55 @@ def test_is_in_scope_blocks_private_ip_even_if_allowlisted():
     # Scope config can't override the hard safety rail.
     scope = {"allowed": ["10.0.0.5"]}
     assert is_in_scope("10.0.0.5", scope) is False
+
+
+def _fake_dns(monkeypatch, answers: dict[str, list[str]]):
+    monkeypatch.setattr(
+        "app.scope.validator.resolve_ips", lambda host: answers.get(host, [])
+    )
+
+
+def test_rejects_domain_resolving_to_loopback(monkeypatch):
+    _fake_dns(monkeypatch, {"localtest.example": ["127.0.0.1"]})
+    with pytest.raises(ScopeViolation):
+        validate_target_format("localtest.example")
+
+
+def test_rejects_domain_resolving_to_metadata(monkeypatch):
+    _fake_dns(monkeypatch, {"meta.example": ["169.254.169.254"]})
+    with pytest.raises(ScopeViolation):
+        validate_target_format("https://meta.example/latest")
+
+
+def test_rejects_domain_with_mixed_public_and_private_addresses(monkeypatch):
+    _fake_dns(monkeypatch, {"mixed.example": ["93.184.216.34", "10.0.0.5"]})
+    assert resolves_to_blocked("mixed.example") is True
+    with pytest.raises(ScopeViolation):
+        validate_target_format("mixed.example")
+
+
+def test_rejects_domain_resolving_to_private_ipv6(monkeypatch):
+    _fake_dns(monkeypatch, {"v6.example": ["fd00::1"]})
+    assert resolves_to_blocked("v6.example") is True
+
+
+def test_allows_domain_resolving_to_public_address(monkeypatch):
+    _fake_dns(monkeypatch, {"example.com": ["93.184.216.34"]})
+    assert resolves_to_blocked("example.com") is False
+    assert validate_target_format("example.com") == "example.com"
+
+
+def test_unresolvable_domain_is_not_blocked(monkeypatch):
+    # Nothing to connect to yet; recon skips hosts that don't resolve, and
+    # every later step re-checks before connecting.
+    _fake_dns(monkeypatch, {})
+    assert resolves_to_blocked("nxdomain.example") is False
+
+
+def test_resolves_to_blocked_checks_literal_ips_without_dns(monkeypatch):
+    def boom(host):
+        raise AssertionError("literal IPs must not be resolved")
+
+    monkeypatch.setattr("app.scope.validator.resolve_ips", boom)
+    assert resolves_to_blocked("10.0.0.5") is True
+    assert resolves_to_blocked("8.8.8.8") is False
