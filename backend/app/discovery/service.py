@@ -13,7 +13,7 @@ from app.models.asset import Asset
 from app.models.base import SessionLocal
 from app.models.event import ScanEvent
 from app.models.scan import Scan, ScanStatus
-from app.scope.validator import is_blocked_destination, is_in_scope
+from app.scope.validator import is_blocked_destination, is_in_scope, resolves_to_blocked
 from app.tools.ffuf import run_ffuf
 from app.tools.katana import run_katana
 
@@ -68,7 +68,7 @@ def run_discovery(scan_id: str) -> None:
             if not is_in_scope(hostname, scope_config):
                 _emit(db, scan_id, "discovery.out_of_scope", {"url": url, "hostname": hostname})
                 continue
-            if is_blocked_destination(hostname):
+            if resolves_to_blocked(hostname):
                 _emit(db, scan_id, "discovery.blocked", {"url": url})
                 continue
 

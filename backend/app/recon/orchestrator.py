@@ -10,7 +10,7 @@ from app.models.scan import Scan, ScanStatus
 from app.core.config import settings
 from app.recon.dns_enum import enumerate_dns_records
 from app.recon.subdomains import discover_subdomains_passive
-from app.scope.validator import is_blocked_destination, is_in_scope
+from app.scope.validator import is_blocked_destination, is_in_scope, resolves_to_blocked
 from app.tools.amass import run_amass
 from app.tools.dnsx import run_dnsx
 from app.tools.subfinder import run_subfinder
@@ -94,20 +94,31 @@ def run_recon(scan_id: str) -> None:
                 ips = sorted({info[4][0] for info in infos})
             except socket.gaierror:
                 continue
-            for ip in ips:
-                if is_blocked_destination(ip):
+            blocked_ips = [ip for ip in ips if is_blocked_destination(ip)]
+            if blocked_ips:
+                # Any blocked address disqualifies the whole host: the HTTP
+                # probe and every later step connect by hostname, and the
+                # client may pick the blocked address over a public one.
+                for ip in blocked_ips:
                     _emit(
                         db, scan_id, "scope.blocked",
                         {"host": host, "ip": ip, "reason": "private/reserved/metadata address"},
                     )
-                    continue
+                continue
+            for ip in ips:
                 _add_asset(db, scan_id, "ip", ip, {"hostname": host})
+            if ips:
                 live_hosts.append(host)
         live_hosts = sorted(set(live_hosts))
         _emit(db, scan_id, "recon.resolution.completed", {"resolved": len(live_hosts)})
 
         _emit(db, scan_id, "recon.http.started", {"host_count": len(live_hosts)})
         for host in live_hosts:
+            # Re-check right before connecting in case the DNS answer
+            # changed since resolution above.
+            if resolves_to_blocked(host):
+                _emit(db, scan_id, "scope.blocked", {"host": host, "reason": "now resolves to a blocked address"})
+                continue
             for scheme in ("https", "http"):
                 url = f"{scheme}://{host}"
                 try:

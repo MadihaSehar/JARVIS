@@ -9,7 +9,7 @@ from app.models.event import ScanEvent
 from app.models.finding import Finding
 from app.models.scan import Scan, ScanStatus
 from app.scanners.registry import get_enabled_scanners
-from app.scope.validator import is_blocked_destination, is_in_scope
+from app.scope.validator import is_in_scope, resolves_to_blocked
 
 MAX_FINDINGS_PER_SCAN = 100
 SCANNER_TIMEOUT = 10
@@ -69,7 +69,7 @@ def run_security_tests(scan_id: str) -> None:
             if not is_in_scope(hostname, scope_config):
                 _emit(db, scan_id, "scanning.out_of_scope", {"url": url, "hostname": hostname})
                 continue
-            if is_blocked_destination(hostname):
+            if resolves_to_blocked(hostname):
                 _emit(db, scan_id, "scanning.blocked", {"url": url})
                 continue
 
